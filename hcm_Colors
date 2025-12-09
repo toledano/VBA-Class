@@ -1,0 +1,59 @@
+Option Compare Database
+Option Explicit
+
+Public Type COLORS_RGB
+    r As Double
+    g As Double
+    b As Double
+End Type
+
+Public Type COLORS_HSL
+    H As Double ' Range 0 - 1, Hue
+    S As Double ' Range 0 - 1, Saturation
+    L As Double ' Range 0 - 1, Lightness
+End Type
+
+Public Type COLORS_HSV
+    H As Double         ' Range 0 - 360, Hue
+    S As Double         ' Range 0 - 1, Saturation
+    V As Double         ' Range 0-1, Value
+End Type
+
+Sub cls_Colors_TEST()
+    Dim rgb As cls_Colors
+    
+    Dim tRGB As COLORS_RGB
+    Dim tHSL As COLORS_HSL
+    Dim tHSV As COLORS_HSV
+    
+    Dim tColor As Long
+    Dim tHex As String
+    
+    Set rgb = New cls_Colors
+    
+    rgb.Red = 244
+    rgb.Green = 200
+    rgb.Blue = 111
+    
+    Debug.Print "Original RGB : "; rgb.Red, rgb.Green, rgb.Blue
+    
+    tHSL = rgb.RGB2HSL
+    Debug.Print "Convert HSL  : "; tHSL.H, tHSL.S, tHSL.L
+    
+    tColor = rgb.RGB2Long
+    Debug.Print "Convert Num  : "; tColor
+    
+    tRGB = rgb.Long2RGB
+    Debug.Print "Convert RGB  : "; tRGB.r, tRGB.g, tRGB.b
+    
+    tHex = rgb.RGB2Hex
+    Debug.Print "Convert Hex  : "; tHex(0)    ' &H....... format
+    Debug.Print "Convert Hex  : "; tHex(1)    ' 0x....... format
+  
+    
+    tHSV = rgb.RGB2HSV
+    Debug.Print "Convert HSV  : "; tHSV.H, tHSV.S, tHSV.V
+    
+    tRGB = rgb.HSV2RGB
+    Debug.Print "Return  RGB  : "; tRGB.r, tRGB.g, tRGB.b
+End Sub
