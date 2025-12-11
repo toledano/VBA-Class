@@ -1,59 +1,272 @@
 Option Compare Database
 Option Explicit
 
+' ------------------------------------------------------------------------------------------------------------------------------------
+' HEXPRESUFIX where value <16 are prefix, and >=16 are suffix. This is used for hexadecimal color number as string for any coding
+' in various computer language.
+' ------------------------------------------------------------------------------------------------------------------------------------
+Public Enum HEXPRESUFIX
+    as_c_lang = 0       ' 0x123 (langage C et dérivés)
+    AS_VB_Lang = 1      ' &h123 (BASIC, VB, VBA)
+    AS_PASCAL_Lang = 2  ' $123 (Pascal, and some derivatives like VHDL)
+    AS_LISP_Lang = 3    ' 0h123 (Texas Instrument)
+    As_COBOL_Lang = 4   ' X '123' (COBOL)
+    AS_DISPLAY_1 = 5    ' 123h (Suffixed notation)
+    AS_DISPLAY_2 = 6    ' 123 (16) (Suffixed notation base16)
+End Enum
+
 Public Type COLORS_RGB
-    r As Double
-    g As Double
-    b As Double
+    R As Double         ' Red color of RGB color system
+    G As Double         ' Green color of RGB color system
+    b As Double         ' Blue color of RGB color system
+    a As Double         ' Optional Alpha transparency parameter of RGBA color system (Default is 1 for RGB)
 End Type
 
+' ------------------------------------------------------------------------------------------------------------------------------------
+' Informations from https://en.wikipedia.org/wiki/HSL_and_HSV
+' RGBToHSV Utility private fonction of Colors class called by property class RGB2HSV
+' HSL and HSV are the two most common cylindrical-coordinate representations of points in an RGB color model. HSL stands for hue,
+' saturation, and lightness, and is often also called HLS. HSV stands for hue, saturation, and value (or brightness), and is also
+' often called HSB (B for brightness) where in each cylinder :
+'   The angle around the central vertical axis corresponds to "hue",
+'   The distance from the axis corresponds to "saturation",
+'   The distance along the axis corresponds to "lightness" (HSL), "value" or "brightness" (HSV).
+' Note that while "hue" in HSL and HSV refers to the same attribute, their definitions of "saturation" differ dramatically.
+' Because HSL and HSV are simple transformations of device-dependent RGB models, the physical colors they define depend on the colors
+' of the red, green, and blue primaries of the device or of the particular RGB space, and on the gamma correction used to represent
+' the amounts of those primaries.
+' Each unique RGB device therefore has unique HSL and HSV spaces to accompany it, and numerical HSL or HSV values describe a
+' different color for each basis RGB space.
+' ------------------------------------------------------------------------------------------------------------------------------------
 Public Type COLORS_HSL
-    H As Double ' Range 0 - 1, Hue
-    S As Double ' Range 0 - 1, Saturation
-    L As Double ' Range 0 - 1, Lightness
+    H As Double         ' Range 0 - 1, Hue
+    S As Double         ' Range 0 - 1, Saturation
+    L As Double         ' Range 0 - 1, Lightness
 End Type
-
 Public Type COLORS_HSV
     H As Double         ' Range 0 - 360, Hue
     S As Double         ' Range 0 - 1, Saturation
     V As Double         ' Range 0-1, Value
 End Type
 
-Sub cls_Colors_TEST()
-    Dim rgb As cls_Colors
+' ------------------------------------------------------------------------------------------------------------------------------------
+' The International Commission on Illumination (CIE) published the CIE 1931 color spaces which define the relationship between the
+' visible spectrum and human color vision. The CIE color spaces are mathematical models that comprise a "standard observer", which is
+' a static idealization of the color vision of a normal human.
+' A useful application of the CIEXYZ colorspace is that a mixture of two colors in some proportion lies on the straight line between
+' those two colors. One disadvantage is that it is not perceptually uniform. This disadvantage is remedied in subsequent color models
+' such as CIELUV and CIELAB, but these and modern color models still use the CIE 1931 color spaces as a foundation.
+' While combinations of red, green, and blue work well for representing colors on screen, sRGB doesn't directly correspond to how
+' humans perceive color. Created by the International Commission on Illumination (CIE) in 1931, the CIE 1931 XYZ (or XYZ for short)
+' color spaces are the first defined quantitative links between distributions of wavelengths in the electromagnetic visible spectrum
+' and perceived colors in human vision.
+' People with normal vision have three kinds of cone cells that sense light, having peaks of spectral sensitivity in differing
+' wavelengths. The CIE X, Y, and Z parameters correspond to levels of stimuli of the three kinds of cone cells which, in principle,
+' describe every visible color.
+' The Y channel represents the luminance of a color.
+' The Z channel reflects the amount of blue in the color but is not the same as the B in RGB.
+' The X axis is orthogonal to the Y- and Z- axis of the XYZ color 3D coordinate system.
+' ------------------------------------------------------------------------------------------------------------------------------------
+Public Type COLORS_XYZ
+    X As Double     ' Range 0 - 100, X Color
+    Y As Double     ' Range 0 - 100, Y Color
+    Z As Double     ' Range 0 - 100, Z 'diagonal' Color
+End Type
+
+' ------------------------------------------------------------------------------------------------------------------------------------
+' The xyY color space is a simple transformation of XYZ that makes luminance and chrominance orthogonal.
+' The uppercase Y coordinate, which measures luminance, is the same as XYZ.
+' Lowercase x, y, and z are normalized versions of X, Y, and Z such that x + y + z = 1, which makes the third coordinate redundant.
+' ------------------------------------------------------------------------------------------------------------------------------------
+Public Type COLORS_xyY
+    X As Double     ' Range 0 - 100, X Color
+    Y As Double     ' Range 0 - 100, Y Color
+    L As Double     ' Range 0 - 100, Uppercase 'Y' as Luminance
+End Type
+
+' ------------------------------------------------------------------------------------------------------------------------------------
+' Hunter Lab (also known as Hunter L,a,b) is a color space defined in 1948[24][25] by Richard S. Hunter. It was designed to be
+' computed via simple formulas from the CIEXYZ space, but to be more perceptually uniform. Hunter named his coordinates L, a and b.
+' Hunter Lab was a precursor to CIELAB, created in 1976 by the International Commission on Illumination (CIE), which named the
+' coordinates for CIELAB as L*, a*, b* to distinguish them from Hunter    's coordinates.[24][25]
+' ------------------------------------------------------------------------------------------------------------------------------------
+Public Type COLORS_HLAB
+    L As Double     ' Range 0 - 100, X Color
+    a As Double     ' Range 0 - 100, X Color
+    b As Double     ' Range 0 - 100, X Color
+End Type
+
+' ------------------------------------------------------------------------------------------------------------------------------------
+' Like the CIEXYZ space it derives from, CIELAB color space is a device-independent, "standard observer" model.
+' The colors it defines are not relative to any particular device such as a computer monitor or a printer, but instead relate to the
+' CIE standard observer which is an averaging of the results of color matching experiments under laboratory conditions.
+' ------------------------------------------------------------------------------------------------------------------------------------
+Public Type COLORS_CLAB
+    L As Double     ' Range 0 - 100, X Color
+    a As Double     ' Range 0 - 100, X Color
+    b As Double     ' Range 0 - 100, X Color
+End Type
+
+Private Type ColourDetails
+    ColourType          As ColourType
+    ThemeColorIndex     As WdThemeColorIndex
+    TintAndShade        As Double
+    rgb                 As Long
+End Type
+
+Private Enum ColourType
+    ColourTypeRGB = &H0
+    ColourTypeAutomatic = &HFF
+    ColourTypeSystem = &H80
+    ColourTypeThemeLow = &HD0
+    ColourTypeThemeHigh = &HDF
+End Enum
+
+Function GetThemeColor(ThemeColorIndex As MsoThemeColorSchemeIndex, TintAndShade As Double) As Long
+    'Everything below this point is pure Tony Jollans http://www.wordarticles.com/Articles/Colours/2007.php#SettingColours
+    Const HexadecimalPrefix As String = "&H"
+    Const UseThemeColor As String = "D"
+    Const UnusedZeroByte As String = "00"
+    Const Unchanged As String = "FF"
+
+    Dim ThemeColor As String
+    Dim LightnessOrDarkness As String
     
+    On Error GoTo Err_GetThemeColor
+    
+    ThemeColor = Hex$(ThemeColorIndex)
+    If TintAndShade >= 0 Then
+        LightnessOrDarkness = Unchanged & Right$("0" & Hex$((1 - TintAndShade) * &HFF), 2)
+    Else
+        LightnessOrDarkness = Right$("0" & Hex$((1 + TintAndShade) * &HFF), 2) & Unchanged
+    End If
+    
+    GetThemeColor = CLng(HexadecimalPrefix & UseThemeColor & ThemeColor & UnusedZeroByte & LightnessOrDarkness)
+
+Ext_GetThemeColor:
+    Exit Function
+    
+Err_GetThemeColor:
+    GetThemeColor = vbNull
+    Resume Ext_GetThemeColor
+    
+End Function
+
+Private Function QueryColour(ColourToTest As Long) As ColourDetails
+    Dim ColourToTestHex As String
+    Dim ColourTypeByte As Byte
+
+    ColourToTestHex = Right$(String$(7, "0") & Hex$(ColourToTest), 8)
+    ColourTypeByte = CByte("&H" & Left$(ColourToTestHex, 2))
+    
+    Select Case ColourTypeByte
+        Case ColourTypeRGB
+            QueryColour.ColourType = ColourTypeRGB
+        Case ColourTypeAutomatic
+            QueryColour.ColourType = ColourTypeAutomatic
+        Case ColourTypeSystem
+            QueryColour.ColourType = ColourTypeSystem
+        Case ColourTypeThemeLow To ColourTypeThemeHigh
+            QueryColour = QueryThemeColor(ColourTypeByte, ColourToTestHex)
+        Case Else
+            QueryColour.ColourType = ColourTypeByte
+    End Select
+
+End Function
+
+'Everything above this point is pure Tony Jollans http://www.wordarticles.com/Articles/Colours/2007.php#SettingColours
+Sub ApplyThemeColors()
+selection.Font.Color = GetThemeColor(ThemeColorIndex:=wdThemeColorMainDark2, _
+TintAndShade:=0.5)
+lbl_Exit:
+Exit Sub
+End Sub
+
+Function TintAndShadeText(TintAndShade As Double, Optional LanguageId As MsoLanguageID) As String
+    If LanguageId = 0 Then
+        LanguageId = LanguageSettings.LanguageId(msoLanguageIDUI)
+    End If
+
+    Select Case TintAndShade
+        Case 0: TintAndShadeText = ""
+        Case Is > 0
+            Select Case LanguageId
+                Case msoLanguageIDArabic: TintAndShadeText = ""
+                Case msoLanguageIDDutch: TintAndShadeText = ", lichter "
+                Case msoLanguageIDFrench: TintAndShadeText = ", plus clair "
+                Case msoLanguageIDGerman: TintAndShadeText = ", klarer"
+                Case msoLanguageIDGreek: TintAndShadeText = ""
+                Case msoLanguageIDHebrew: TintAndShadeText = "\u05d1\u05e8\u05d5\u05e8\u0020\u05d9\u05d5\u05ea\u05e8"
+                Case msoLanguageIDHindi: TintAndShadeText = ""
+                Case msoLanguageIDItalian: TintAndShadeText = ""
+                Case msoLanguageIDJapanese: TintAndShadeText = ""
+                Case msoLanguageIDPolish: TintAndShadeText = ""
+                Case msoLanguageIDPortuguese: TintAndShadeText = ""
+                Case msoLanguageIDRussian: TintAndShadeText = ""
+                Case msoLanguageIDSpanish: TintAndShadeText = ""
+                Case Else: TintAndShadeText = ", lighter "
+            End Select
+            TintAndShadeText = TintAndShadeText & TintAndShade * 100 & "%"
+        Case Is < 0
+            Select Case LanguageId
+                Case msoLanguageIDDutch: TintAndShadeText = ", donkerder "
+                Case msoLanguageIDFrench: TintAndShadeText = ", plus sombre "
+                Case Else: TintAndShadeText = ", darker "
+            End Select
+            TintAndShadeText = TintAndShadeText & TintAndShade * -100 & "%"
+    End Select
+
+End Function
+
+Sub cls_Colors_TEST()
+    Dim MyColor As cls_Colors
+
     Dim tRGB As COLORS_RGB
     Dim tHSL As COLORS_HSL
     Dim tHSV As COLORS_HSV
-    
+    Dim tXYZ As COLORS_XYZ
+    Dim txyY As COLORS_xyY
+
     Dim tColor As Long
     Dim tHex As String
-    
-    Set rgb = New cls_Colors
-    
-    rgb.Red = 244
-    rgb.Green = 200
-    rgb.Blue = 111
-    
-    Debug.Print "Original RGB : "; rgb.Red, rgb.Green, rgb.Blue
-    
-    tHSL = rgb.RGB2HSL
+
+    Set MyColor = New cls_Colors
+
+    MyColor.Red = 255
+    MyColor.Green = 127
+    MyColor.Blue = 63
+
+    Debug.Print "Original RGB : "; MyColor.Red, MyColor.Green, MyColor.Blue
+
+    tHSL = MyColor.RGB2HSL
     Debug.Print "Convert HSL  : "; tHSL.H, tHSL.S, tHSL.L
-    
-    tColor = rgb.RGB2Long
+
+    tColor = MyColor.RGB2Long
     Debug.Print "Convert Num  : "; tColor
-    
-    tRGB = rgb.Long2RGB
-    Debug.Print "Convert RGB  : "; tRGB.r, tRGB.g, tRGB.b
-    
-    tHex = rgb.RGB2Hex
-    Debug.Print "Convert Hex  : "; tHex(0)    ' &H....... format
-    Debug.Print "Convert Hex  : "; tHex(1)    ' 0x....... format
-  
-    
-    tHSV = rgb.RGB2HSV
+
+    tRGB = MyColor.Long2RGB
+    Debug.Print "Convert RGB  : "; tRGB.R, tRGB.G, tRGB.b
+
+    tHex = MyColor.RGB2Hex(HEXPRESUFIX.AS_VB_Lang)
+    Debug.Print "Convert Hex  : "; tHex
+
+    tHSV = MyColor.RGB2HSV
     Debug.Print "Convert HSV  : "; tHSV.H, tHSV.S, tHSV.V
+
+    tRGB = MyColor.HSV2RGB
+    Debug.Print "Return  RGB  : "; tRGB.R, tRGB.G, tRGB.b
+
+    tXYZ = MyColor.RGB2XYZ
+    Debug.Print "Convert XYZ  : "; tXYZ.X, tXYZ.Y, tXYZ.Z ' 51.96 - 38.45 - 36.8
+
+    tRGB = MyColor.XYZ2RGB
+    Debug.Print "Return  RGB  : "; tRGB.R, tRGB.G, tRGB.b
+
+    txyY = MyColor.XYZ2xyY
+    Debug.Print "Convert xyY  : "; txyY.X, txyY.Y, txyY.L
+
+    tXYZ = MyColor.xyY2XYZ
+    Debug.Print "Return  XYZ  : "; tXYZ.X, tXYZ.Y, tXYZ.Z
     
-    tRGB = rgb.HSV2RGB
-    Debug.Print "Return  RGB  : "; tRGB.r, tRGB.g, tRGB.b
 End Sub
+
